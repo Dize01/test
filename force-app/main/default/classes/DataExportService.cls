@@ -4,25 +4,32 @@ public with sharing class DataExportService {
     }
 
     public static void createCsvFile(Id parentRecordId, List<String> fieldApiNames, List<SObject> records, Integer fileNumber) {
-        List<String> csvRows = new List<String>{ toCsvLine(fieldApiNames) };
-
+        List<String> csvRows = new List<String>();
         for (SObject record : records) {
-            List<String> values = new List<String>();
-
-            for (String fieldApiName : fieldApiNames) {
-                values.add(formatValue(record.get(fieldApiName)));
-            }
-
-            csvRows.add(toCsvLine(values));
+            csvRows.add(buildCsvRow(fieldApiNames, record));
         }
+        createCsvFile(parentRecordId, fieldApiNames, csvRows, fileNumber);
+    }
+
+    public static void createCsvFile(Id parentRecordId, List<String> fieldApiNames, List<String> csvRows, Integer fileNumber) {
+        List<String> content = new List<String>{ toCsvLine(fieldApiNames) };
+        content.addAll(csvRows);
 
         ContentVersion csvFile = new ContentVersion();
         csvFile.Title = getTitle(fileNumber);
         csvFile.PathOnClient = getPathOnClient(fileNumber);
         csvFile.FirstPublishLocationId = parentRecordId;
-        csvFile.VersionData = Blob.valueOf(String.join(csvRows, '\n'));
+        csvFile.VersionData = Blob.valueOf(String.join(content, '\n'));
 
         insert csvFile;
+    }
+
+    public static String buildCsvRow(List<String> fieldApiNames, SObject record) {
+        List<String> values = new List<String>();
+        for (String fieldApiName : fieldApiNames) {
+            values.add(formatValue(record.get(fieldApiName)));
+        }
+        return toCsvLine(values);
     }
 
     private static String getTitle(Integer fileNumber) {
