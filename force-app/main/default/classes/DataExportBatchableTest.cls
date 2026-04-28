@@ -1,23 +1,13 @@
 @IsTest
 private class DataExportBatchableTest {
+    @TestSetup
+    static void setupData() {
+        TestDataFactory.setupData();
+    }
+
     @IsTest
     static void batchCreatesCsvForAccount() {
-        Account account = new Account(Name = 'Batch Export Account');
-        insert account;
-
-        Contact firstContact = new Contact(
-            LastName = 'First',
-            AccountId = account.Id,
-            MailingCity = 'Sydney',
-            Description = 'First description'
-        );
-        Contact secondContact = new Contact(
-            LastName = 'Second',
-            AccountId = account.Id,
-            MailingCity = 'Melbourne',
-            Description = 'Second description'
-        );
-        insert new List<Contact>{ firstContact, secondContact };
+        Account account = [SELECT Id FROM Account LIMIT 1];
 
         Test.startTest();
         String query = 'SELECT Id, Name, MailingStreet, MailingCity, MailingState, MailingPostalCode, MailingCountry, Description FROM Contact WHERE AccountId = \''

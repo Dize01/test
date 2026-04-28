@@ -1,17 +1,13 @@
 @IsTest
 private class DataExportInvocableTest {
+    @TestSetup
+    static void setupData() {
+        TestDataFactory.setupData();
+    }
+
     @IsTest
     static void generateReturnsSuccessForAccount() {
-        Account account = new Account(Name = 'Export Test Account');
-        insert account;
-
-        Contact contact = new Contact(
-            LastName = 'Export Contact',
-            AccountId = account.Id,
-            MailingCity = 'Sydney',
-            Description = 'Original description'
-        );
-        insert contact;
+        Account account = [SELECT Id, Name FROM Account LIMIT 1];
 
         DataExportInvocable.Request request = new DataExportInvocable.Request();
         request.recordId = account.Id;
@@ -24,7 +20,7 @@ private class DataExportInvocableTest {
 
         System.assertEquals(1, responses.size(), 'One response should be returned.');
         System.assertEquals(true, responses[0].success, responses[0].message);
-        System.assertEquals('Data export batch started for Account: Export Test Account', responses[0].message);
+        System.assertEquals('Data export batch started for Account: ' + account.Name, responses[0].message);
 
         ContentDocumentLink accountFileLink = [
             SELECT ContentDocumentId
@@ -42,9 +38,9 @@ private class DataExportInvocableTest {
 
         String csv = csvFile.VersionData.toString();
         System.assert(csv.contains('Id,Name,MailingStreet,MailingCity,MailingState,MailingPostalCode,MailingCountry,Description'));
-        System.assert(csv.contains('Export Contact'), 'The CSV should include the Contact name.');
+        System.assert(csv.contains('First'), 'The CSV should include the Contact name.');
         System.assert(csv.contains('Sydney'), 'The CSV should include the Contact address fields.');
-        System.assert(csv.contains('Original description'), 'The CSV should include the Contact description.');
+        System.assert(csv.contains('First description'), 'The CSV should include the Contact description.');
     }
 
     @IsTest
