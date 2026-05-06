@@ -1,0 +1,64 @@
+global class RemoveCsvPortalFileShareBatch
+    implements Database.Batchable<SObject> {
+
+    global Database.QueryLocator start(Database.BatchableContext bc) {
+        return Database.getQueryLocator([
+            SELECT Id, CreatedById, Election__c, Election__r.Polling_Date__c
+            FROM IndividualApplication
+            WHERE Election__r.Polling_Date__c = TODAY
+        ]);
+    }
+
+    global void execute(Database.BatchableContext bc, List<IndividualApplication> scope) {
+        Set<Id> applicationIds = new Set<Id>();
+        Map<Id, Id> applicationToPortalUser = new Map<Id, Id>();
+
+        for (IndividualApplication app : scope) {
+            applicationIds.add(app.Id);
+
+            // Assumption: portal user who initiated it is CreatedById
+            applicationToPortalUser.put(app.Id, app.CreatedById);
+        }
+
+        // CSV files attached to the IndividualApplication records
+        List<ContentDocumentLink> appFileLinks = [
+            SELECT Id, LinkedEntityId, ContentDocumentId,
+                   ContentDocument.FileExtension,
+                   ContentDocument.Title
+            FROM ContentDocumentLink
+            WHERE LinkedEntityId IN :applicationIds
+            AND ContentDocument.FileExtension = 'csv'
+        ];
+
+        Set<Id> csvDocumentIds = new Set<Id>();
+        Set<Id> portalUserIds = new Set<Id>();
+
+        for (ContentDocumentLink link : appFileLinks) {
+            csvDocumentIds.add(link.ContentDocumentId);
+
+            Id portalUserId = applicationToPortalUser.get(link.LinkedEntityId);
+            if (portalUserId != null) {
+                portalUserIds.add(portalUserId);
+            }
+        }
+
+        if (csvDocumentIds.isEmpty() || portalUserIds.isEmpty()) {
+            return;
+        }
+
+        // Direct file shares to portal users
+        List<ContentDocumentLink> sharesToRemove = [
+            SELECT Id, LinkedEntityId, ContentDocumentId
+            FROM ContentDocumentLink
+            WHERE ContentDocumentId IN :csvDocumentIds
+            AND LinkedEntityId IN :portalUserIds
+        ];
+
+        if (!sharesToRemove.isEmpty()) {
+            delete sharesToRemove;
+        }
+    }
+
+    global void finish(Database.BatchableContext bc) {
+    }
+}
