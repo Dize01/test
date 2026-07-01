@@ -1,0 +1,94 @@
+public with sharing class ObjectSearchController {
+    @AuraEnabled(cacheable=true)
+    public static List<Object__c> searchObjects(String searchTerm) {
+        String term = '%' + String.escapeSingleQuotes(searchTerm.trim()) + '%';
+        return [
+            SELECT Id, Field__c, Field2__c
+            FROM Object__c
+            WHERE Field__c LIKE :term
+            ORDER BY Field__c ASC
+            LIMIT 50
+        ];
+    }
+}
+
+
+<template>
+    <lightning-card title="Search">
+        <div class="slds-p-around_medium">
+            <lightning-input
+                label="Search"
+                value={searchTerm}
+                onchange={handleSearchChange}>
+            </lightning-input>
+
+            <template lwc:if={contactResults.length}>
+                <lightning-datatable
+                    key-field="Id"
+                    data={contactResults}
+                    columns={columns}
+                    selected-rows={selectedRows}
+                    onrowselection={handleRowSelection}
+                    max-row-selection="1">
+                </lightning-datatable>
+            </template>
+        </div>
+    </lightning-card>
+</template>
+
+import { LightningElement, api } from 'lwc';
+import { FlowAttributeChangeEvent } from 'lightning/flowSupport';
+import searchObjects from '@salesforce/apex/ObjectSearchController.searchObjects';
+
+const COLUMNS = [
+    { label: 'Field',  fieldName: 'Field__c'  },
+    { label: 'Field2', fieldName: 'Field2__c' },
+];
+
+export default class ObjectSearch extends LightningElement {
+    @api recordId;
+    @api selectedObject;
+
+    searchTerm = '';
+    contactResults = [];
+    selectedRows = [];
+    columns = COLUMNS;
+
+    handleSearchChange(event) {
+        this.searchTerm = event.target.value;
+
+        searchObjects({ searchTerm: this.searchTerm })
+            .then(result => {
+                console.log('Apex returned:', JSON.stringify(result));
+                this.contactResults = JSON.parse(JSON.stringify(result));
+            })
+            .catch(error => {
+                console.error('Apex error:', JSON.stringify(error));
+            });
+    }
+
+    handleRowSelection(event) {
+        const selectedRecords = event.detail.selectedRows;
+        console.log('Selected:', JSON.stringify(selectedRecords));
+
+        if (selectedRecords.length > 0) {
+            this.selectedObject = selectedRecords[0];
+            this.dispatchEvent(new FlowAttributeChangeEvent('selectedObject', this.selectedObject));
+        }
+    }
+}
+
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>62.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="recordId"      type="String"                       role="inputOnly"  />
+            <property name="selectedObject" type="@salesforce/schema/Object__c" role="outputOnly" />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>
