@@ -1,0 +1,35 @@
+trigger CountRoundTrigger on Count_Round__c (after insert) {
+    List<Id> roundIds = new List<Id>();
+    for (Count_Round__c round : Trigger.new) {
+        roundIds.add(round.Id);
+    }
+
+    System.enqueueJob(new TallyBatchLauncher(roundIds));
+}
+
+public class TallyBatchLauncher implements Queueable {
+    private List<Id> roundIds;
+
+    public TallyBatchLauncher(List<Id> roundIds) {
+        this.roundIds = roundIds;
+    }
+
+    public void execute(QueueableContext ctx) {
+        for (Id roundId : roundIds) {
+            Database.executeBatch(new TallyBatch(roundId), 200);
+        }
+    }
+}
+
+List<AggregateResult> results = [
+    SELECT Group__c, COUNT(Id) itemCount
+    FROM Item_Preference__c
+    WHERE Rank__c = 1
+    GROUP BY Group__c
+];
+
+for (AggregateResult ar : results) {
+    Id groupId = (Id) ar.get('Group__c');
+    Integer count = (Integer) ar.get('itemCount');
+    // upsert a Group_Tally__c record here
+}
