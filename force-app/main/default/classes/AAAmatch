@@ -1,0 +1,18 @@
+Integer matchingVoteCount = Database.countQuery(
+    'SELECT COUNT() ' +
+    'FROM Object_A__c ' +
+    'WHERE Id IN (' +
+        'SELECT Object_A__c ' +
+        'FROM Object_B__c ' +
+        'WHERE Candidate__c = \'Alice\' ' +
+        'AND Rank__c = 1' +
+    ') ' +
+    'AND Id IN (' +
+        'SELECT Object_A__c ' +
+        'FROM Object_B__c ' +
+        'WHERE Candidate__c = \'Bob\' ' +
+        'AND Rank__c = 2' +
+    ')'
+);
+
+System.debug('Alice Rank 1 → Bob Rank 2 count: ' + matchingVoteCount);
