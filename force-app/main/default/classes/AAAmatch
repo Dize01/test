@@ -16,3 +16,4 @@ Integer matchingVoteCount = Database.countQuery(
 );
 
 System.debug('Alice Rank 1 → Bob Rank 2 count: ' + matchingVoteCount);
+

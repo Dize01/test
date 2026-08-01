@@ -1,0 +1,257 @@
+// ======================================================================
+// CountRoundTrigger.trigger
+// ======================================================================
+trigger CountRoundTrigger on Count_Round__c (after insert) {
+
+    if (Trigger.isAfter && Trigger.isInsert) {
+        CountRoundTriggerHandler.handleAfterInsert(Trigger.new);
+    }
+}
+
+
+// ======================================================================
+// CountRoundTriggerHandler.cls
+// ======================================================================
+public with sharing class CountRoundTriggerHandler {
+
+    public static void handleAfterInsert(List<Count_Round__c> newCountRounds) {
+        List<Id> countRoundIds = collectCountRoundIds(newCountRounds);
+        enqueueOrchestrators(countRoundIds);
+    }
+
+    private static List<Id> collectCountRoundIds(List<Count_Round__c> countRounds) {
+        return null;
+    }
+
+    private static void enqueueOrchestrators(List<Id> countRoundIds) {
+    }
+}
+
+
+// ======================================================================
+// CountOrchestratorQueueable.cls
+// ======================================================================
+public with sharing class CountOrchestratorQueueable implements Queueable {
+
+    public enum Mode { TALLY, TRANSFER }
+
+    private Id countRoundId;
+    private Mode mode;
+    private Id candidateId; // used when mode == TRANSFER
+
+    public CountOrchestratorQueueable(Id countRoundId, Mode mode) {
+        this.countRoundId = countRoundId;
+        this.mode = mode;
+    }
+
+    public CountOrchestratorQueueable(Id countRoundId, Mode mode, Id candidateId) {
+        this.countRoundId = countRoundId;
+        this.mode = mode;
+        this.candidateId = candidateId;
+    }
+
+    public void execute(QueueableContext ctx) {
+        try {
+            dispatchBatch();
+        } catch (Exception e) {
+            handleFailure(e);
+        }
+    }
+
+    private void dispatchBatch() {
+    }
+
+    private void handleFailure(Exception e) {
+    }
+}
+
+
+// ======================================================================
+// VoteTallyBatch.cls
+// ======================================================================
+public with sharing class VoteTallyBatch implements Database.Batchable<sObject>, Database.Stateful {
+
+    private Id countRoundId;
+
+    public VoteTallyBatch(Id countRoundId) {
+        this.countRoundId = countRoundId;
+    }
+
+    public Database.QueryLocator start(Database.BatchableContext bc) {
+        return null;
+    }
+
+    public void execute(Database.BatchableContext bc, List<sObject> scope) {
+    }
+
+    public void finish(Database.BatchableContext bc) {
+        CountValidationResult result = CountValidationService.evaluate(countRoundId);
+        handleValidationResult(result);
+    }
+
+    private void handleValidationResult(CountValidationResult result) {
+    }
+}
+
+
+// ======================================================================
+// SurplusTransferBatch.cls
+// ======================================================================
+public with sharing class SurplusTransferBatch implements Database.Batchable<sObject>, Database.Stateful {
+
+    private Id countRoundId;
+    private Id electedCandidateId;
+
+    public SurplusTransferBatch(Id countRoundId, Id electedCandidateId) {
+        this.countRoundId = countRoundId;
+        this.electedCandidateId = electedCandidateId;
+    }
+
+    public Database.QueryLocator start(Database.BatchableContext bc) {
+        return null;
+    }
+
+    public void execute(Database.BatchableContext bc, List<sObject> scope) {
+    }
+
+    private void processOriginalGroup(List<sObject> votes) {
+    }
+
+    private void processTransferredGroup(List<sObject> votes) {
+    }
+
+    private Id resolveNextContinuingCandidate(sObject vote) {
+        return null;
+    }
+
+    private Decimal computeTransferValue(sObject vote) {
+        return null;
+    }
+
+    public void finish(Database.BatchableContext bc) {
+        CountValidationResult result = CountValidationService.evaluate(countRoundId);
+        handleValidationResult(result);
+    }
+
+    private void handleValidationResult(CountValidationResult result) {
+    }
+}
+
+
+// ======================================================================
+// CountValidationService.cls
+// ======================================================================
+public with sharing class CountValidationService {
+
+    public static CountValidationResult evaluate(Id countRoundId) {
+        List<CountEntry__c> entries = getCountEntries(countRoundId);
+
+        if (hasWinner(entries)) {
+            return buildWinnerResult(entries);
+        }
+
+        if (hasSurplusToTransfer(entries)) {
+            return buildSurplusResult(entries);
+        }
+
+        return buildExclusionResult(entries);
+    }
+
+    private static List<CountEntry__c> getCountEntries(Id countRoundId) {
+        return null;
+    }
+
+    private static Boolean hasWinner(List<CountEntry__c> entries) {
+        return false;
+    }
+
+    private static Boolean hasSurplusToTransfer(List<CountEntry__c> entries) {
+        return false;
+    }
+
+    private static CountValidationResult buildWinnerResult(List<CountEntry__c> entries) {
+        return null;
+    }
+
+    private static CountValidationResult buildSurplusResult(List<CountEntry__c> entries) {
+        return null;
+    }
+
+    private static CountValidationResult buildExclusionResult(List<CountEntry__c> entries) {
+        return null;
+    }
+
+    private static Id resolveTieBreak(List<CountEntry__c> tiedEntries) {
+        return null;
+    }
+}
+
+
+// ======================================================================
+// CountValidationResult.cls
+// ======================================================================
+public with sharing class CountValidationResult {
+
+    public enum Outcome { ELECTION_COMPLETE, NEEDS_SURPLUS_TRANSFER, NEEDS_EXCLUSION }
+
+    public Outcome outcome;
+    public Id countRoundId;
+    public Id electionId;
+    public List<Id> electedCandidateIds;
+    public Id excludedCandidateId;
+    public Id surplusCandidateId;
+
+    public CountValidationResult(Outcome outcome, Id countRoundId, Id electionId) {
+        this.outcome = outcome;
+        this.countRoundId = countRoundId;
+        this.electionId = electionId;
+    }
+}
+
+
+
+
+Election
+ └─ Button Click
+      → create Count
+      → create CountRound #1 (all Votes: CurrentCandidate__c = rank-1 pref, VoteOrigin__c = Original)
+
+CountRound (insert)
+ └─ CountRoundTrigger (after insert)
+      └─ CountRoundTriggerHandler
+           └─ enqueue CountOrchestratorQueueable(crId, mode=TALLY) [per CR]
+
+CountOrchestratorQueueable
+ ├─ mode=TALLY    → Database.executeBatch(VoteTallyBatch)
+ └─ mode=TRANSFER → Database.executeBatch(SurplusTransferBatch)
+
+VoteTallyBatch
+ ├─ start()   → query Votes WHERE CurrentCandidate__c != null (this Election)
+ ├─ execute() → group by CurrentCandidate__c → tally → CountEntry per candidate
+ └─ finish()  → CountValidationService.evaluate(crId)
+                → handleValidationResult(result)
+
+SurplusTransferBatch
+ ├─ start()   → query Votes WHERE CurrentCandidate__c = electedCandidateId
+ │              split: VoteOrigin__c = Original | Transferred
+ ├─ execute() → walk VP ranking → next continuing candidate
+ │              compute transfer value (per chosen rule)
+ │              update CurrentCandidate__c, VoteOrigin__c = Transferred
+ │              write CountTransfer (aggregate, per source→dest per round)
+ └─ finish()  → CountValidationService.evaluate(crId)
+                → handleValidationResult(result)
+
+CountValidationService.evaluate(crId)
+ ├─ rank CountEntry by NoOfEffectiveVotes
+ ├─ check quota → winner(s)?
+ ├─ check remaining candidates == remaining seats → auto-elect
+ ├─ else → lowest CE → exclusion candidate (+ tie-break)
+ └─ return CountValidationResult:
+      ELECTION_COMPLETE | NEEDS_SURPLUS_TRANSFER | NEEDS_EXCLUSION
+
+handleValidationResult(result)
+ ├─ ELECTION_COMPLETE      → mark Election/Count complete → STOP
+ ├─ NEEDS_SURPLUS_TRANSFER → create CR(n+1) → enqueue Orchestrator(mode=TRANSFER)
+ └─ NEEDS_EXCLUSION        → create CR(n+1), CE.Excluded=true
+                              → enqueue Orchestrator(mode=TALLY)
+                                 (or TRANSFER, if exclusions should log CountTransfer too)
