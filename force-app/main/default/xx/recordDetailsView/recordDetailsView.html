@@ -1,0 +1,88 @@
+<template>
+  <lightning-quick-action-panel header="Opportunity Details">
+    <template if:true={isFormView}>
+      <lightning-record-form
+        record-id={recordId}
+        object-api-name={objectApiName}
+        fields={fields}
+        mode="readonly"
+        columns="2"
+      ></lightning-record-form>
+
+      <h3 class="slds-text-heading_small slds-p-top_medium slds-p-bottom_x-small">
+        Cases
+      </h3>
+      <template if:true={cases.length}>
+        <lightning-datatable
+          key-field="Id"
+          data={cases}
+          columns={columns}
+          hide-checkbox-column
+        ></lightning-datatable>
+      </template>
+      <template if:false={cases.length}>
+        <p class="slds-text-body_small slds-text-color_weak">
+          No cases on this opportunity.
+        </p>
+      </template>
+    </template>
+
+    <template if:true={isLoadingView}>
+      <div class="slds-is-relative" style="min-height: 12rem;">
+        <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+      </div>
+    </template>
+
+    <template if:true={isResultView}>
+      <div class="slds-align_absolute-center slds-p-vertical_medium slds-text-heading_medium">
+        Case Created: {createdCase.CaseNumber}
+      </div>
+
+      <template if:true={statusSlices.length}>
+        <h3 class="slds-text-heading_small slds-align_absolute-center slds-p-bottom_x-small">
+          Case Status Breakdown
+        </h3>
+        <div class="chart-row">
+          <svg viewBox="0 0 80 80" class="pie-chart" role="img" aria-label="Case status breakdown">
+            <template for:each={statusSlices} for:item="slice">
+              <path key={slice.key} d={slice.path} style={slice.pathStyle}>
+                <title>{slice.status}: {slice.count} ({slice.percent}%)</title>
+              </path>
+            </template>
+          </svg>
+          <ul class="chart-legend">
+            <template for:each={statusSlices} for:item="slice">
+              <li key={slice.key} class="chart-legend-item">
+                <span class="chart-legend-swatch" style={slice.swatchStyle}></span>
+                <span class="chart-legend-label">{slice.status} ({slice.count})</span>
+              </li>
+            </template>
+          </ul>
+        </div>
+      </template>
+    </template>
+
+    <div slot="footer">
+      <template if:true={isFormView}>
+        <lightning-button
+          variant="neutral"
+          label="Close"
+          onclick={handleClose}
+        ></lightning-button>
+        <lightning-button
+          variant="brand"
+          class="slds-m-left_x-small"
+          label="Start"
+          onclick={handleStart}
+        ></lightning-button>
+      </template>
+      <template if:true={isResultView}>
+        <lightning-button
+          variant="brand"
+          label="Close"
+          onclick={handleClose}
+        ></lightning-button>
+      </template>
+    </div>
+  </lightning-quick-action-panel>
+</template>
