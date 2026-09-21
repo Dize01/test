@@ -1,0 +1,72 @@
+Vote__c vote1  = TestDataFactory.createVote(candidate1.Id,candidate2.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote2  = TestDataFactory.createVote(candidate1.Id,candidate2.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote3  = TestDataFactory.createVote(candidate1.Id,candidate3.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote4  = TestDataFactory.createVote(candidate1.Id,candidate3.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote5  = TestDataFactory.createVote(candidate1.Id,candidate3.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote6  = TestDataFactory.createVote(candidate2.Id,candidate4.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote7  = TestDataFactory.createVote(candidate3.Id,candidate3.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote8  = TestDataFactory.createVote(candidate3.Id,candidate3.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote9  = TestDataFactory.createVote(candidate3.Id,candidate3.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote10 = TestDataFactory.createVote(candidate4.Id,candidate4.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote11 = TestDataFactory.createVote(candidate4.Id,candidate4.Id,null, election.Id, 'Formal',1,true);
+Vote__c vote12 = TestDataFactory.createVote(candidate4.Id,candidate4.Id,null, election.Id, 'Formal',1,true);
+
+VotePreference__c votePreference1A = TestDataFactory.createVotePreference(candidate1.Id, 1, vote1.Id,true);
+VotePreference__c votePreference2A = TestDataFactory.createVotePreference(candidate2.Id, 2, vote1.Id,true);
+VotePreference__c votePreference4A = TestDataFactory.createVotePreference(candidate4.Id, 3, vote1.Id,true);
+
+VotePreference__c votePreference1B = TestDataFactory.createVotePreference(candidate1.Id, 1, vote2.Id,true);
+VotePreference__c votePreference2B = TestDataFactory.createVotePreference(candidate2.Id, 2, vote2.Id,true);
+VotePreference__c votePreference4B = TestDataFactory.createVotePreference(candidate4.Id, 3, vote2.Id,true);
+
+VotePreference__c votePreference1C = TestDataFactory.createVotePreference(candidate1.Id, 1, vote3.Id,true);
+VotePreference__c votePreference3C = TestDataFactory.createVotePreference(candidate3.Id, 2, vote3.Id,true);
+
+VotePreference__c votePreference1D = TestDataFactory.createVotePreference(candidate1.Id, 1, vote4.Id,true);
+VotePreference__c votePreference3D = TestDataFactory.createVotePreference(candidate3.Id, 2, vote4.Id,true);
+
+VotePreference__c votePreference1E = TestDataFactory.createVotePreference(candidate1.Id, 1, vote5.Id,true);
+VotePreference__c votePreference3E = TestDataFactory.createVotePreference(candidate3.Id, 2, vote5.Id,true);
+
+VotePreference__c votePreference2F = TestDataFactory.createVotePreference(candidate2.Id, 1, vote6.Id,true);
+VotePreference__c votePreference4F = TestDataFactory.createVotePreference(candidate4.Id, 2, vote6.Id,true);
+
+VotePreference__c votePreference3G = TestDataFactory.createVotePreference(candidate3.Id, 1, vote7.Id,true);
+VotePreference__c votePreference3H = TestDataFactory.createVotePreference(candidate3.Id, 1, vote8.Id,true);
+VotePreference__c votePreference3I = TestDataFactory.createVotePreference(candidate3.Id, 1, vote9.Id,true);
+VotePreference__c votePreference4J = TestDataFactory.createVotePreference(candidate4.Id, 1, vote10.Id,true);
+VotePreference__c votePreference4K = TestDataFactory.createVotePreference(candidate4.Id, 1, vote11.Id,true);
+VotePreference__c votePreference4L = TestDataFactory.createVotePreference(candidate4.Id, 1, vote12.Id,true);
+
+Count__c count = TestDataFactory.createCount(election.Id,true);
+
+// Round 1: candidate1 elected (500, surplus 99)
+CountRound__c countRound1 = TestDataFactory.createCountRound(count.Id, 1, 'Paused', true);
+
+CountEntry__c countEntry1A = TestDataFactory.createCountEntry(countRound1.Id, candidate1.Id, 5,500,0,0,null,null,'Elected' ,true);
+CountEntry__c countEntry1B = TestDataFactory.createCountEntry(countRound1.Id, candidate2.Id, 1,100,0,0,null,null,'Continuing' ,true);
+CountEntry__c countEntry1C = TestDataFactory.createCountEntry(countRound1.Id, candidate3.Id, 3,300,0,0,null,null,'Continuing' ,true);
+CountEntry__c countEntry1D = TestDataFactory.createCountEntry(countRound1.Id, candidate4.Id, 3,300,0,0,null,null,'Continuing' ,true);
+
+// Round 2: candidate1 surplus 99 at 19.8/ballot; candidate2 excluded at end of round
+CountRound__c countRound2 = TestDataFactory.createCountRound(count.Id, 2, 'Paused', true);
+
+CountEntry__c countEntry2A = TestDataFactory.createCountEntry(countRound2.Id, candidate1.Id, 5,500,0,99,null,null,'Elected' ,true);
+CountEntry__c countEntry2B = TestDataFactory.createCountEntry(countRound2.Id, candidate2.Id, 1,100,39,0,null,null,'Excluded' ,true);
+CountEntry__c countEntry2C = TestDataFactory.createCountEntry(countRound2.Id, candidate3.Id, 3,300,59,0,null,null,'Continuing' ,true);
+CountEntry__c countEntry2D = TestDataFactory.createCountEntry(countRound2.Id, candidate4.Id, 3,300,0,0,null,null,'Continuing' ,true);
+
+TestDataFactory.createCountTransfer(countRound2.Id, candidate1.Id,null, 5,99,19.8,19.8,'Transfers Out' ,true);
+TestDataFactory.createCountTransfer(countRound2.Id, candidate1.Id,candidate2.Id, 2,39,19.8,19.8,'Transfers In' ,true);
+TestDataFactory.createCountTransfer(countRound2.Id, candidate1.Id,candidate3.Id, 3,59,19.8,19.8,'Transfers In' ,true);
+
+// Round 3: candidate2's first preference (vote6) to candidate4 at full value
+CountRound__c countRound3 = TestDataFactory.createCountRound(count.Id, 3, 'Paused', true);
+
+CountEntry__c countEntry3A = TestDataFactory.createCountEntry(countRound3.Id, candidate1.Id, 5,500,0,99,null,null,'Elected' ,true);
+CountEntry__c countEntry3B = TestDataFactory.createCountEntry(countRound3.Id, candidate2.Id, 1,100,39,100,null,null,'Excluded' ,true);
+CountEntry__c countEntry3C = TestDataFactory.createCountEntry(countRound3.Id, candidate3.Id, 3,300,59,0,null,null,'Continuing' ,true);
+CountEntry__c countEntry3D = TestDataFactory.createCountEntry(countRound3.Id, candidate4.Id, 3,300,100,0,null,null,'Continuing' ,true);
+
+TestDataFactory.createCountTransfer(countRound3.Id, candidate2.Id,null, 1,100,100,100,'Transfers Out' ,true);
+TestDataFactory.createCountTransfer(countRound3.Id, candidate2.Id,candidate4.Id, 1,100,100,100,'Transfers In' ,true);
