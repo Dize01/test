@@ -16,6 +16,7 @@ export default class CustomTextAreaInput extends OmniscriptBaseMixin(LightningEl
     _required = false;
     value = '';
     hasError = false;
+    _restored = false;
 
     @api
     get required() {
@@ -26,12 +27,32 @@ export default class CustomTextAreaInput extends OmniscriptBaseMixin(LightningEl
     }
 
     connectedCallback() {
-        // Prefill from the OmniScript data JSON if a value already exists (e.g. user navigated back)
-        const existing = this.omniJsonData?.[this.fieldName];
+        // Restore the value when the user navigates back to this step
+        let existing = this.omniGetSaveState ? this.omniGetSaveState(this.stateKey) : undefined;
+        if (typeof existing !== 'string') {
+            // Fallback: omniUpdateDataJson stores data under the element's name, e.g. CustomTextArea1.textValue
+            existing = this.omniJsonData?.[this.elementName]?.[this.fieldName];
+        }
         if (typeof existing === 'string') {
             this.value = existing;
             this.hasError = DISALLOWED_PATTERN.test(existing);
         }
+    }
+
+    renderedCallback() {
+        // Re-show the field error after navigating back, once the textarea exists
+        if (!this._restored && this.value) {
+            this._restored = true;
+            this.validate();
+        }
+    }
+
+    get elementName() {
+        return this.omniJsonDef?.name;
+    }
+
+    get stateKey() {
+        return `${this.elementName || 'customTextAreaInput'}_${this.fieldName}`;
     }
 
     handleChange(event) {
@@ -60,6 +81,9 @@ export default class CustomTextAreaInput extends OmniscriptBaseMixin(LightningEl
             [this.fieldName]: this.value,
             hasSpecialCharError: this.hasError
         });
+        if (this.omniSaveState) {
+            this.omniSaveState(this.value, this.stateKey, true);
+        }
     }
 
     // Called by the OmniScript Step when the user clicks Next. Returning false blocks navigation.
