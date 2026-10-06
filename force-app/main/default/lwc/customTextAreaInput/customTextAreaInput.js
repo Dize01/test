@@ -10,7 +10,7 @@ export default class CustomTextAreaInput extends OmniscriptBaseMixin(LightningEl
     // Properties below can be set from the Custom LWC element's "Custom Lightning Web Component Properties" in the OmniScript designer
     @api label = 'Profile';
     @api placeholder;
-    @api maxLength = 1000;
+    @api maxLength = 1000; 
     @api fieldName = 'textValue';
     @api errorMessage = 'Use up to 1,000 characters on a single line. Emojis, line breaks and special characters (such as • or ★) are not allowed.';
     @api requiredMessage = 'Complete this field.';
