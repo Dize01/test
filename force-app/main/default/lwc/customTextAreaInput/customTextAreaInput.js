@@ -1,25 +1,35 @@
 import { LightningElement, api } from 'lwc';
 import { OmniscriptBaseMixin } from 'omnistudio/omniscriptBaseMixin';
 
-// Printable ASCII (space through ~), tabs and new lines are allowed.
+// Printable ASCII (space through ~) and tabs are allowed. New lines only when allowLineBreaks is true.
 // Rejects bullets, decorative symbols, emoji, smart quotes, accented/non-Latin letters, etc.
-const DISALLOWED_PATTERN = /[^ -~\t\r\n]/;
+const DISALLOWED_PATTERN = /[^ -~\t]/;
+const DISALLOWED_PATTERN_WITH_LINE_BREAKS = /[^ -~\t\r\n]/;
 
 export default class CustomTextAreaInput extends OmniscriptBaseMixin(LightningElement) {
     // Properties below can be set from the Custom LWC element's "Custom Lightning Web Component Properties" in the OmniScript designer
     @api label = 'Profile';
     @api placeholder;
-    @api maxLength;
+    @api maxLength = 1000;
     @api fieldName = 'textValue';
-    @api errorMessage = 'Special characters such as bullets, emoji or symbols are not allowed. Only standard keyboard characters are permitted.';
+    @api errorMessage = 'Use up to 1,000 characters on a single line. Emojis, line breaks and special characters (such as • or ★) are not allowed.';
     @api requiredMessage = 'Complete this field.';
     // Static text or a merge field, e.g. %Prefill:Description%. Only used when the user hasn't entered a value yet.
     @api defaultValue;
 
+    _allowLineBreaks = false;
     _required = true;
     value = '';
     hasError = false;
     _restored = false;
+
+    @api
+    get allowLineBreaks() {
+        return this._allowLineBreaks;
+    }
+    set allowLineBreaks(val) {
+        this._allowLineBreaks = val === true || val === 'true';
+    }
 
     @api
     get required() {
@@ -41,7 +51,7 @@ export default class CustomTextAreaInput extends OmniscriptBaseMixin(LightningEl
         }
         if (typeof existing === 'string') {
             this.value = existing;
-            this.hasError = DISALLOWED_PATTERN.test(existing);
+            this.hasError = this.disallowedPattern.test(existing);
         }
     }
 
@@ -51,6 +61,10 @@ export default class CustomTextAreaInput extends OmniscriptBaseMixin(LightningEl
             this._restored = true;
             this.validate();
         }
+    }
+
+    get disallowedPattern() {
+        return this._allowLineBreaks ? DISALLOWED_PATTERN_WITH_LINE_BREAKS : DISALLOWED_PATTERN;
     }
 
     get hasDefaultValue() {
@@ -78,7 +92,7 @@ export default class CustomTextAreaInput extends OmniscriptBaseMixin(LightningEl
 
     validate() {
         const textarea = this.template.querySelector('lightning-textarea');
-        this.hasError = DISALLOWED_PATTERN.test(this.value || '');
+        this.hasError = this.disallowedPattern.test(this.value || '');
         if (textarea) {
             textarea.setCustomValidity(this.hasError ? this.errorMessage : '');
             textarea.reportValidity();
